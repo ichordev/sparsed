@@ -1,0 +1,19 @@
+{
+	"name": "sparse",
+	"description": "Sparse sets, compatible with BetterC, @nogc, and nothrow.",
+	"authors": ["Aya Partridge"],
+	"license": "BSL-1.0",
+	
+	"targetType": "staticLibrary",
+	"targetPath": "lib",
+	
+	"configurations": [
+		{
+			"name": "noBC",
+		},
+		{
+			"name": "yesBC",
+			"buildOptions": ["betterC"],
+		},
+	],
+}
