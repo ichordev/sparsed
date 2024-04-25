@@ -1,11 +1,11 @@
 module sparse;
 
-template SparseSetIndex(size_t capacity){
-	static if(capacity <= ubyte.max){
+template SparseSetIndex(size_t indices){
+	static if(indices <= ubyte.max){
 		alias SparseSetIndex = ubyte;
-	}else static if(capacity <= ushort.max){
+	}else static if(indices <= ushort.max){
 		alias SparseSetIndex = ushort;
-	}else static if(capacity <= uint.max){
+	}else static if(indices <= uint.max){
 		alias SparseSetIndex = uint;
 	}else{
 		alias SparseSetIndex = ulong;
@@ -15,20 +15,26 @@ template SparseSetIndex(size_t capacity){
 /**
 A classic sparse set using static arrays.
 Can optionally store an arbitrary type in order to act as a map.
+Params:
+	Value_ = what value to store with the items in the dense array. `void` for none.
+	indices_ = how many indices there should be in the sparse array. (i.e. the max index + 1)
+	capacity_ = how many elements can be held in the dense array. (i.e. how many elements can be stored at once)
 */
-struct SparseSet(size_t capacity_, Value_=void){
-	alias capacity = capacity_;
+struct SparseSet(Value_=void, size_t indices_, size_t capacity_=indices_){
+	enum indices = indices_;
+	enum capacity = capacity_;
+	static assert(capacity <= indices, "Unnecessarily large `capacity`. Should be at most equal to `indices`");
 	alias Value = Value_;
-	alias Index = SparseSetIndex!capacity;
+	alias Index = SparseSetIndex!indices;
 	
-	struct Dense{
+	struct Element{
 		Index ind;
 		static if(!is(Value == void)){
 			Value value;
 		}
 	}
-	Dense[capacity] dense;
-	Index[capacity] sparse;
+	Element[capacity] dense;
+	Index[indices] sparse;
 	private Index elements = 0; ///The number of elements currently stored in `dense`.
 	
 	///Returns the number of elements in the set.
@@ -50,7 +56,7 @@ struct SparseSet(size_t capacity_, Value_=void){
 	
 	///Check whether element `ind` is in the set.
 	bool has(Index ind) nothrow @nogc pure @safe
-	in(ind < capacity) =>
+	in(ind < indices) =>
 		sparse[ind] < elements && dense[sparse[ind]].ind == ind;
 	
 	static if(is(Value == void)){
@@ -58,10 +64,11 @@ struct SparseSet(size_t capacity_, Value_=void){
 			this.has(ind);
 		
 		///Add element `ind`.
-		bool add(Index ind) nothrow @nogc pure @safe{
+		bool add(Index ind) nothrow @nogc pure @safe
+		in(ind < indices){
 			if(elements >= capacity)
 				return false;
-			dense[elements] = Dense(ind);
+			dense[elements] = Element(ind);
 			sparse[ind] = elements;
 			elements++;
 			return true;
@@ -69,16 +76,17 @@ struct SparseSet(size_t capacity_, Value_=void){
 	}else{
 		Value* opBinaryRight(string op: "in")(Index ind) nothrow @nogc pure @safe{
 			if(this.has(ind)){
-				return &dense[ind].value;
+				return &dense[sparse[ind]].value;
 			}
 			return null;
 		}
 		
 		///Add element `ind` with associated `value`.
-		bool add(Index ind, Value value) nothrow @nogc pure @safe{
+		bool add(Index ind, Value value) nothrow @nogc pure @safe
+		in(ind < indices){
 			if(elements >= capacity)
 				return false;
-			dense[elements] = Dense(ind, value);
+			dense[elements] = Element(ind, value);
 			sparse[ind] = elements;
 			elements++;
 			return true;
@@ -87,7 +95,7 @@ struct SparseSet(size_t capacity_, Value_=void){
 }
 
 unittest{
-	alias Set = SparseSet!(40, void);
+	alias Set = SparseSet!(void, 40, 20);
 	Set set;
 	set.add(0);
 	set.add(2);
@@ -95,14 +103,14 @@ unittest{
 	set.add(5);
 	set.remove(0);
 	set.add(6);
-	assert(set.dense[0..set.length] == [Set.Dense(5), Set.Dense(2), Set.Dense(4), Set.Dense(6)]);
+	assert(set.dense[0..set.length] == [Set.Element(5), Set.Element(2), Set.Element(4), Set.Element(6)]);
 	assert( set.has(5));
 	assert(!set.has(0));
 	assert(4 in set);
 }
 
 unittest{
-	alias Set = SparseSet!(40, string);
+	alias Set = SparseSet!(string, 40, 20);
 	Set set;
 	set.add(0, "Testing");
 	set.add(2, "Hello");
@@ -110,8 +118,9 @@ unittest{
 	set.add(5, ":)");
 	set.remove(0);
 	set.add(6, ":O");
-	assert(set.dense[0..set.length] == [Set.Dense(5, ":)"), Set.Dense(2, "Hello"), Set.Dense(4, "World"), Set.Dense(6, ":O")]);
+	assert(set.dense[0..set.length] == [Set.Element(5, ":)"), Set.Element(2, "Hello"), Set.Element(4, "World"), Set.Element(6, ":O")]);
 	assert( set.has(5));
 	assert(!set.has(0));
-	//assert(*(4 in set) == "World"); //FIXME: Returns pointer to empty string?
+	assert(4 in set);
+	assert(*(4 in set) == "World");
 }
