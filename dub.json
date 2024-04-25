@@ -15,5 +15,10 @@
 			"name": "yesBC",
 			"buildOptions": ["betterC"],
 		},
+		{
+			"name": "testBC",
+			"buildOptions": ["betterC"],
+			"targetType": "executable",
+		}
 	],
 }
