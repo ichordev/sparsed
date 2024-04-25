@@ -1,5 +1,6 @@
 module sparse;
 
+///The smallest integer that can fully index a sparse array with size `indices`.
 template SparseSetIndex(size_t indices){
 	static if(indices <= ubyte.max){
 		alias SparseSetIndex = ubyte;
@@ -33,47 +34,56 @@ struct SparseSet(Value_=void, size_t indices_, size_t capacity_=indices_){
 			Value value;
 		}
 	}
-	Element[capacity] dense;
-	Index[indices] sparse;
-	private Index elements = 0; ///The number of elements currently stored in `dense`.
+	Element[capacity] dense; ///A list of indices into `sparse`, each with an optional `Value`. The indices should not be modified from outside. Can be read (somewhat) safely with `denseElements`/`denseElementsConst`.
+	Index[indices] sparse; ///A list of indices into `dense`. Should not be modified from outside.
+	Index elementCount = 0; ///The number of elements currently stored in `dense`. Should not be modified from outside. Can be read safely with `length`.
 	
-	///Returns the number of elements in the set.
-	@property Index length() nothrow @nogc pure @safe =>
-		elements;
+	///The number of elements in the set.
+	@property Index length() const nothrow @nogc pure @safe =>
+		elementCount;
 	
-	///Clears the set.
+	///A slice containing the elements in the set.
+	@property Element[] denseElements() return nothrow @nogc pure @safe =>
+		dense[0..elementCount];
+	///A read-only slice containing the elements in the set.
+	@property const(Element)[] denseElementsConst() return const nothrow @nogc pure @safe =>
+		dense[0..elementCount];
+	
+	///Clears the set. Should not be called when iterating over `denseElements`.
 	void clear() nothrow @nogc pure @safe{
-		elements = 0;
+		elementCount = 0;
 	}
 	
-	///Remove element `ind` from the set.
+	///Remove element `ind` from the set. Should not be called when iterating over `denseElements`.
 	void remove(Index ind) nothrow @nogc pure @safe
 	in(this.has(ind)){
-		dense[sparse[ind]] = dense[elements-1];
-		sparse[dense[elements-1].ind] = sparse[ind];
-		elements--;
+		dense[sparse[ind]] = dense[elementCount-1];
+		sparse[dense[elementCount-1].ind] = sparse[ind];
+		elementCount--;
 	}
 	
 	///Check whether element `ind` is in the set.
-	bool has(Index ind) nothrow @nogc pure @safe
+	bool has(Index ind) const nothrow @nogc pure @safe
 	in(ind < indices) =>
-		sparse[ind] < elements && dense[sparse[ind]].ind == ind;
+		sparse[ind] < elementCount && dense[sparse[ind]].ind == ind;
 	
 	static if(is(Value == void)){
-		bool opBinaryRight(string op: "in")(Index ind) nothrow @nogc pure @safe =>
+		///Return whether `ind` is in the set or not.
+		bool opBinaryRight(string op: "in")(Index ind) const nothrow @nogc pure @safe =>
 			this.has(ind);
 		
-		///Add element `ind`.
+		///Add element `ind` to the set. Returns false if there's no space left.
 		bool add(Index ind) nothrow @nogc pure @safe
 		in(ind < indices){
-			if(elements >= capacity)
+			if(elementCount >= capacity || this.has(ind))
 				return false;
-			dense[elements] = Element(ind);
-			sparse[ind] = elements;
-			elements++;
+			dense[elementCount] = Element(ind);
+			sparse[ind] = elementCount;
+			elementCount++;
 			return true;
 		}
 	}else{
+		///Check if `ind` is in the set, and get a pointer to its associated value if so.
 		Value* opBinaryRight(string op: "in")(Index ind) nothrow @nogc pure @safe{
 			if(this.has(ind)){
 				return &dense[sparse[ind]].value;
@@ -81,15 +91,38 @@ struct SparseSet(Value_=void, size_t indices_, size_t capacity_=indices_){
 			return null;
 		}
 		
-		///Add element `ind` with associated `value`.
+		///Add element `ind` with associated `value` to the set.
 		bool add(Index ind, Value value) nothrow @nogc pure @safe
 		in(ind < indices){
-			if(elements >= capacity)
+			if(elementCount >= capacity || this.has(ind))
 				return false;
-			dense[elements] = Element(ind, value);
-			sparse[ind] = elements;
-			elements++;
+			dense[elementCount] = Element(ind, value);
+			sparse[ind] = elementCount;
+			elementCount++;
 			return true;
+		}
+		
+		///Get a pointer to the value of `ind`, which is assumed to be in the set.
+		Value* get(Index ind) return nothrow @nogc pure @safe
+		in(this.has(ind)) =>
+			&dense[sparse[ind]].value;
+		
+		///Get a constant pointer to the value of `ind`, which is assumed to be in the set.
+		const(Value)* read(Index ind) return const nothrow @nogc pure @safe
+		in(this.has(ind)) =>
+			&dense[sparse[ind]].value;
+	}
+}
+
+version(unittest){
+	version(D_BetterC){
+		extern(C) void main(){
+			import core.stdc.stdio;
+			static foreach(test; __traits(getUnitTests, sparse)){
+				printf("Running test…\n");
+				test();
+			}
+			printf("All tests passed.\n");
 		}
 	}
 }
@@ -103,10 +136,20 @@ unittest{
 	set.add(5);
 	set.remove(0);
 	set.add(6);
-	assert(set.dense[0..set.length] == [Set.Element(5), Set.Element(2), Set.Element(4), Set.Element(6)]);
+	assert(set.length == 4);
+	assert(set.denseElementsConst == [Set.Element(5), Set.Element(2), Set.Element(4), Set.Element(6)]);
 	assert( set.has(5));
 	assert(!set.has(0));
 	assert(4 in set);
+	assert(7 !in set);
+	foreach(element; set.denseElementsConst){
+		set.add(cast(Set.Index)(element.ind+1));
+	}
+	assert(set.length == 6);
+	assert(set.denseElementsConst == [Set.Element(5), Set.Element(2), Set.Element(4), Set.Element(6), Set.Element(3), Set.Element(7)]);
+	set.clear();
+	assert(set.length == 0);
+	assert(set.denseElementsConst == []);
 }
 
 unittest{
@@ -122,5 +165,9 @@ unittest{
 	assert( set.has(5));
 	assert(!set.has(0));
 	assert(4 in set);
+	assert(7 !in set);
 	assert(*(4 in set) == "World");
+	assert(*set.read(4) == "World");
+	*set.get(4) = "Dlrow";
+	assert(*(4 in set) == "Dlrow");
 }
