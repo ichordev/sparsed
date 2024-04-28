@@ -25,6 +25,8 @@ struct SparseSet(Value_=void, size_t indices_, size_t capacity_=indices_){
 	enum indices = indices_;
 	enum capacity = capacity_;
 	static assert(capacity <= indices, "Unnecessarily large `capacity`. Should be at most equal to `indices`");
+	static assert(indices > 0, "`indices` must be greater than 0.");
+	static assert(capacity > 0, "`capacity` must be greater than 0.");
 	alias Value = Value_;
 	alias Index = SparseSetIndex!indices;
 	
@@ -34,6 +36,7 @@ struct SparseSet(Value_=void, size_t indices_, size_t capacity_=indices_){
 			Value value;
 		}
 	}
+	
 	Element[capacity] dense; ///A list of indices into `sparse`, each with an optional `Value`. The indices should not be modified from outside. Can be read (somewhat) safely with `denseElements`/`denseElementsConst`.
 	Index[indices] sparse; ///A list of indices into `dense`. Should not be modified from outside.
 	Index elementCount = 0; ///The number of elements currently stored in `dense`. Should not be modified from outside. Can be read safely with `length`.
@@ -84,7 +87,14 @@ struct SparseSet(Value_=void, size_t indices_, size_t capacity_=indices_){
 		}
 	}else{
 		///Check if `ind` is in the set, and get a pointer to its associated value if so.
-		Value* opBinaryRight(string op: "in")(Index ind) nothrow @nogc pure @safe{
+		Value* opBinaryRight(string op: "in")(Index ind) return nothrow @nogc pure @safe{
+			if(this.has(ind)){
+				return &dense[sparse[ind]].value;
+			}
+			return null;
+		}
+		///Check if `ind` is in the set, and get a pointer to its associated value if so.
+		const(Value)* opBinaryRight(string op: "in")(Index ind) return const nothrow @nogc pure @safe{
 			if(this.has(ind)){
 				return &dense[sparse[ind]].value;
 			}
@@ -107,7 +117,7 @@ struct SparseSet(Value_=void, size_t indices_, size_t capacity_=indices_){
 		in(this.has(ind)) =>
 			&dense[sparse[ind]].value;
 		
-		///Get a constant pointer to the value of `ind`, which is assumed to be in the set.
+		///Get a const pointer to the value of `ind`, which is assumed to be in the set.
 		const(Value)* read(Index ind) return const nothrow @nogc pure @safe
 		in(this.has(ind)) =>
 			&dense[sparse[ind]].value;
