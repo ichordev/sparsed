@@ -64,6 +64,16 @@ struct SparseSet(Value_=void, size_t indices_, size_t capacity_=indices_){
 		sparse[dense[elementCount-1].ind] = sparse[ind];
 		elementCount--;
 	}
+	static if(!is(Value == void)){
+		///Remove element `ind` from the set, and initialise any copied elements. Should not be called when iterating over `denseElements`.
+		void removeErase(Index ind) nothrow @nogc pure @safe
+		in(this.has(ind)){
+			dense[sparse[ind]] = dense[elementCount-1];
+			dense[elementCount-1].value = Value.init;
+			sparse[dense[elementCount-1].ind] = sparse[ind];
+			elementCount--;
+		}
+	}
 	
 	///Check whether element `ind` is in the set.
 	bool has(Index ind) const nothrow @nogc pure @safe
