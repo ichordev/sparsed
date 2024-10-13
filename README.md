@@ -1,7 +1,11 @@
 # SparseD
-An incredibly simple sparse set implemented in D with static arrays. Compatible with BetterC, `@nogc`, and `nothrow`.
+Incredibly simple & super-fast sparse sets in D.
 
-Currently, the whole implementation is `nothrow @nogc pure @safe`, although this could change in the future.
+Can be used to create fixed-size maps with O(1) insertion, lookup, and removal; and lightning-fast iteration over values.
+
+Two variants are available, with almost identical interfaces:
+- Static: Implemented using static arrays. Fixed in size. Compatible with BetterC. All methods are `nothrow @nogc pure @safe`.
+- Dynamic: Implemented with dynamic arrays. The sparse array is still fixed in size, but the dense array can grow and shrink. Incompatible with BetterC. All methods are at least `nothrow pure @safe`, but some use the GC.
 
 Documentation is provided in the library's source code. Make sure to also read a function's preconditions where applicable.
 
@@ -11,7 +15,7 @@ import sparse;
 import std.stdio: writefln;
 
 void main(){
-	SparseSet!(string, 128, 64) mySet; //Can store up to 64 strings, with unique IDs 0–127.
+	StaticSparseSet!(string, 128, 64) mySet; //Can store up to 64 strings, with unique IDs 0–127.
 	
 	mySet.add(12, "Twelve"); //O(1) element insertion
 	mySet.add(7, "Seven");
