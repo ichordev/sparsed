@@ -8,11 +8,11 @@ module sparse;
 
 ///The smallest integer that can fully index a sparse array with size `indices`.
 template SparseSetIndex(size_t indices){
-	static if(indices <= ubyte.max){
+	static if(indices <= ubyte.max+1){
 		alias SparseSetIndex = ubyte;
-	}else static if(indices <= ushort.max){
+	}else static if(indices <= ushort.max+1){
 		alias SparseSetIndex = ushort;
-	}else static if(indices <= uint.max){
+	}else static if(indices <= uint.max+1L){
 		alias SparseSetIndex = uint;
 	}else{
 		alias SparseSetIndex = ulong;
@@ -169,8 +169,8 @@ struct SparseSet(Value_=void, size_t indices_, size_t capacity_=indices_){
 	}
 }
 unittest{
-	alias Set = SparseSet!(void, 40, 20);
-	Set set;
+	alias SS = SparseSet!(void, 40, 20);
+	SS set;
 	set.add(0);
 	set.add(2);
 	set.add(4);
@@ -178,30 +178,30 @@ unittest{
 	set.remove(0);
 	set.add(6);
 	assert(set.length == 4);
-	assert(set.denseElementsConst == [Set.Element(5), Set.Element(2), Set.Element(4), Set.Element(6)]);
+	assert(set.denseElementsConst == [SS.Element(5), SS.Element(2), SS.Element(4), SS.Element(6)]);
 	assert( set.has(5));
 	assert(!set.has(0));
 	assert(4 in set);
 	assert(7 !in set);
 	foreach(element; set.denseElementsConst){
-		set.add(cast(Set.Index)(element.ind+1));
+		set.add(cast(SS.Index)(element.ind+1));
 	}
 	assert(set.length == 6);
-	assert(set.denseElementsConst == [Set.Element(5), Set.Element(2), Set.Element(4), Set.Element(6), Set.Element(3), Set.Element(7)]);
+	assert(set.denseElementsConst == [SS.Element(5), SS.Element(2), SS.Element(4), SS.Element(6), SS.Element(3), SS.Element(7)]);
 	set.clear();
 	assert(set.length == 0);
 	assert(set.denseElementsConst == []);
 }
 unittest{
-	alias Set = SparseSet!(string, 40, 20);
-	Set set;
+	alias SS = SparseSet!(string, 40, 20);
+	SS set;
 	set.add(0, "Testing");
 	set.add(2, "Hello");
 	set.add(4, "World");
 	set.add(5, ":)");
 	set.remove(0);
 	set.add(6, ":O");
-	assert(set.dense[0..set.length] == [Set.Element(5, ":)"), Set.Element(2, "Hello"), Set.Element(4, "World"), Set.Element(6, ":O")]);
+	assert(set.dense[0..set.length] == [SS.Element(5, ":)"), SS.Element(2, "Hello"), SS.Element(4, "World"), SS.Element(6, ":O")]);
 	assert( set.has(5));
 	assert(!set.has(0));
 	assert(4 in set);
@@ -239,7 +239,7 @@ struct DynamicSparseSet(Value_=void, size_t indices_){
 	
 	///The number of elements in the set.
 	@property Index length() const nothrow @nogc pure @safe =>
-		dense.length;
+		cast(Index)dense.length;
 	
 	///A slice containing the elements in the set.
 	@property Element[] denseElements() return nothrow @nogc pure @safe =>
@@ -300,11 +300,11 @@ struct DynamicSparseSet(Value_=void, size_t indices_){
 		bool opBinaryRight(string op: "in")(Index ind) const nothrow @nogc pure @safe =>
 			this.has(ind);
 		
-		///Add element `ind` to the set. Returns `false` if there's no space left, or element `ind` already existed.
+		///Add element `ind` to the set. Returns `false` if element `ind` already existed.
 		bool add(Index ind) nothrow pure @safe
 		in(ind < indices){
-			if(dense.length < capacity && !this.has(ind)){
-				sparse[ind] = dense.length;
+			if(!this.has(ind)){
+				sparse[ind] = cast(Index)dense.length;
 				dense ~= Element(ind);
 				return true;
 			}else return false;
@@ -314,11 +314,11 @@ struct DynamicSparseSet(Value_=void, size_t indices_){
 		inout(Value)* opBinaryRight(string op: "in")(Index ind) return inout nothrow @nogc pure @safe =>
 			this.has(ind) ? &dense[sparse[ind]].value : null;
 		
-		///Add element `ind` with associated `value` to the set. Returns `false` if there's no space left, or element `ind` already existed.
-		bool add(Index ind, Value value) nothrow @nogc pure @safe
+		///Add element `ind` with associated `value` to the set. Returns `false` if element `ind` already existed.
+		bool add(Index ind, Value value) nothrow pure @safe
 		in(ind < indices){
-			if(dense.length < capacity && !this.has(ind)){
-				sparse[ind] = dense.length;
+			if(!this.has(ind)){
+				sparse[ind] = cast(Index)dense.length;
 				dense ~= Element(ind, value);
 				return true;
 			}else return false;
@@ -341,6 +341,49 @@ struct DynamicSparseSet(Value_=void, size_t indices_){
 			this.has(ind) ? &dense[sparse[ind]].value : null;
 	}
 }}
+unittest{
+	alias SS = DynamicSparseSet!(void, 40);
+	SS set;
+	set.add(0);
+	set.add(2);
+	set.add(4);
+	set.add(5);
+	set.remove(0);
+	set.add(6);
+	assert(set.length == 4);
+	assert(set.denseElementsConst == [SS.Element(5), SS.Element(2), SS.Element(4), SS.Element(6)]);
+	assert( set.has(5));
+	assert(!set.has(0));
+	assert(4 in set);
+	assert(7 !in set);
+	foreach(element; set.denseElementsConst){
+		set.add(cast(SS.Index)(element.ind+1));
+	}
+	assert(set.length == 6);
+	assert(set.denseElementsConst == [SS.Element(5), SS.Element(2), SS.Element(4), SS.Element(6), SS.Element(3), SS.Element(7)]);
+	set.clear();
+	assert(set.length == 0);
+	assert(set.denseElementsConst == []);
+}
+unittest{
+	alias SS = DynamicSparseSet!(string, 40);
+	SS set;
+	set.add(0, "Testing");
+	set.add(2, "Hello");
+	set.add(4, "World");
+	set.add(5, ":)");
+	set.remove(0);
+	set.add(6, ":O");
+	assert(set.dense[0..set.length] == [SS.Element(5, ":)"), SS.Element(2, "Hello"), SS.Element(4, "World"), SS.Element(6, ":O")]);
+	assert( set.has(5));
+	assert(!set.has(0));
+	assert(4 in set);
+	assert(7 !in set);
+	assert(*(4 in set) == "World");
+	assert(*set.read(4) == "World");
+	*set.get(4) = "Dlrow";
+	assert(*(4 in set) == "Dlrow");
+}
 
 version(unittest){
 	version(D_BetterC){
