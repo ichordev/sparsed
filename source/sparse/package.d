@@ -312,7 +312,7 @@ struct DynamicSparseSet(Value_=void, size_t indices_){
 	}else{
 		///Check if `ind` is in the set, and get a pointer to its associated value if so.
 		inout(Value)* opBinaryRight(string op: "in")(Index ind) return inout nothrow @nogc pure @safe =>
-			this.has(ind) ? &dense[sparse[ind]].value : null;
+			ind < indices && this.has(ind) ? &dense[sparse[ind]].value : null;
 		
 		///Add element `ind` with associated `value` to the set. Returns `false` if element `ind` already existed.
 		bool add(Index ind, Value value) nothrow pure @safe
