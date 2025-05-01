@@ -248,6 +248,9 @@ struct DynamicSparseSet(Value_=void, size_t indices_){
 	@property const(Element)[] denseElementsConst() return const nothrow @nogc pure @safe =>
 		dense[];
 	
+	DynamicSparseSet dup() nothrow pure @safe =>
+		DynamicSparseSet(dense.dup(), sparse);
+	
 	///Clears the set. Should not be called when iterating over `denseElements`.
 	void clear() nothrow @nogc pure @safe{
 		dense = [];
