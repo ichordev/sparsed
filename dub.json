@@ -1,24 +1,11 @@
 {
 	"name": "sparse",
-	"description": "Sparse sets, compatible with BetterC, @nogc, and nothrow.",
+	"description": "Sparse sets. Supports using custom allocators.",
 	"authors": ["Aya Partridge"],
 	"license": "BSL-1.0",
 	
+	"dependencies": {"memterface": "~>1.1"},
 	"targetType": "staticLibrary",
 	"targetPath": "lib",
 	
-	"configurations": [
-		{
-			"name": "noBC",
-		},
-		{
-			"name": "yesBC",
-			"buildOptions": ["betterC"],
-		},
-		{
-			"name": "testBC",
-			"buildOptions": ["betterC"],
-			"targetType": "executable",
-		}
-	],
 }

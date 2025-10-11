@@ -1,11 +1,11 @@
 # SparseD
 Incredibly simple & super-fast sparse sets in D.
 
-Can be used to create fixed-size maps with O(1) insertion, lookup, and removal; and lightning-fast iteration over values.
+Can be used to create fixed-size maps with O(1) insertion, lookup, and removal; and lightning-fast iteration over values that are in the set.
 
 Two variants are available, with almost identical interfaces:
-- Static: Implemented using static arrays. Fixed in size. Compatible with BetterC. All methods are `nothrow @nogc pure @safe`.
-- Dynamic: Implemented with dynamic arrays. The sparse array is still fixed in size, but the dense array can grow and shrink. Incompatible with BetterC. All methods are at least `nothrow pure @safe`, but some use the GC.
+- Static: Implemented using static arrays. Fixed in size.
+- Dynamic: Implemented with dynamic arrays using user-defined allocators (see: [memterface](https://code.dlang.org/packages/memterface)). The sparse array is still fixed in size, but the dense array can grow and shrink.
 
 Documentation is provided in the library's source code. Make sure to also read a function's preconditions where applicable.
 
@@ -28,7 +28,7 @@ void main(){
 		element.value ~= "!!";
 	}
 	mySet.remove(12); //O(1) element removal
-	foreach(element; mySet.denseElementsConst){ //Still the speed as a foreach over an array!
+	foreach(element; mySet.denseElementsConst){ //Still the same speed as a foreach over an array!
 		writefln("%d: %s", element.ind, element.value);
 		//49: Forty-nine!!
 		//7: Seven!!
