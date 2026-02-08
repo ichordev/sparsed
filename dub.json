@@ -2,7 +2,7 @@
 	"name": "sparse",
 	"description": "Sparse sets. Supports using custom allocators.",
 	"authors": ["Aya Partridge"],
-	"license": "BSL-1.0",
+	"license": "GPL-3.0-or-later",
 	
 	"dependencies": {"memterface": "~>1.1"},
 	"targetType": "staticLibrary",
