@@ -67,12 +67,12 @@ struct StaticSparseSet(uint sparseSize_, uint denseSize_=sparseSize_, Value_=voi
 	
 	static if(!is(Value == void)){
 		///Gets a slice containing the elements in the set.
-		ElementImpl[] getElements() return nothrow @nogc pure @safe =>
-			cast(ElementImpl[])dense[0..elementCount];
+		Element[] getElements() return nothrow @nogc pure @trusted =>
+			cast(Element[])dense[0..elementCount];
 	}
 	///Gets a read-only slice containing the elements in the set.
-	const(ElementImpl)[] readElements() return const nothrow @nogc pure @safe =>
-		cast(const(ElementImpl)[])dense[0..elementCount];
+	const(Element)[] readElements() return const nothrow @nogc pure @trusted =>
+		cast(const(Element)[])dense[0..elementCount];
 	
 	/**
 	Clears the set.
@@ -296,12 +296,12 @@ if((is(Index_ == uint) || is(Index_ == ushort) || is(Index_ == ubyte)) && isAllo
 	
 	static if(!is(Value == void)){
 		///Gets a slice containing the elements in the set.
-		ElementImpl[] getElements() return nothrow @nogc pure @safe =>
-			cast(ElementImpl[])dense[0..elementCount];
+		Element[] getElements() return nothrow @nogc pure @trusted =>
+			cast(Element[])dense[0..elementCount];
 	}
 	///Gets a read-only slice containing the elements in the set.
-	const(ElementImpl)[] readElements() return const nothrow @nogc pure @safe =>
-		cast(const(ElementImpl)[])(dense[0..elementCount]);
+	const(Element)[] readElements() return const nothrow @nogc pure @trusted =>
+		cast(const(Element)[])(dense[0..elementCount]);
 	
 	///Duplicates the set and returns a new set allocated with `allocator`.
 	SparseSet!(Index, Value, A) dup(A=Allocator)(auto ref A allocator){
@@ -530,7 +530,7 @@ unittest{
 	set.remove(0);
 	set.add(6);
 	assert(set.length == 4);
-	assert(set.readElements() == [SS.Element(5), SS.Element(2), SS.Element(4), SS.Element(6)]);
+	assert(set.readElements() == cast(const)[SS.Element(5), SS.Element(2), SS.Element(4), SS.Element(6)]);
 	assert( set.has(5));
 	assert(!set.has(0));
 	assert(4 in set);
