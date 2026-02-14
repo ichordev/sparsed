@@ -365,24 +365,20 @@ if((is(Index_ == uint) || is(Index_ == ushort) || is(Index_ == ubyte)) && isAllo
 	@property denseSize(uint val)
 	in(val >= elementCount)
 	in(val <= this.sparse.length){
-		import core.exception: onOutOfMemoryError;
 		auto dense = this.dense;
-		if(allocator.resizeArray(dense, val)){
-			this.dense = dense;
-		}else onOutOfMemoryError();
+		allocator.resizeArray(dense, val);
+		this.dense = dense;
 		return val;
 	}
 	
 	//Re-allocates the dense array if it is smaller than the shrink threshold. Should be called whenever `elementCount` is decremented.
 	private void tryShrink(){
-		import core.exception: onOutOfMemoryError;
 		auto dense = this.dense;
 		if(dense.length - elementCount < shrinkThreshold){
 			//do nothing
 		}else if(elementCount){
-			if(allocator.resizeArray(dense, elementCount)){
-				this.dense = dense;
-			}else onOutOfMemoryError();
+			allocator.resizeArray(dense, elementCount);
+			this.dense = dense;
 		}else{
 			clear();
 		}
@@ -391,19 +387,15 @@ if((is(Index_ == uint) || is(Index_ == ushort) || is(Index_ == ubyte)) && isAllo
 	//Grows the dense array by 1.
 	private void grow()
 	in(this.dense.length < this.sparse.length){
-		import core.exception: onOutOfMemoryError;
 		import std.algorithm.comparison: min;
 		auto dense = this.dense;
 		if(elementCount < dense.length){
 			//do nothing
 		}else if(dense !is null){
-			if(allocator.resizeArray(dense, min(elementCount + growAmount, this.sparse.length))){
-				this.dense = dense;
-			}else onOutOfMemoryError();
+			allocator.resizeArray(dense, min(elementCount + growAmount, this.sparse.length));
+			this.dense = dense;
 		}else{
 			this.dense = allocator.newArray!ElementImpl(growAmount);
-			if(_dense !is null){
-			}else onOutOfMemoryError();
 		}
 		elementCount++;
 	}
@@ -478,7 +470,7 @@ if((is(Index_ == uint) || is(Index_ == ushort) || is(Index_ == ubyte)) && isAllo
 		Returns: `false` if element `ind` already existed.
 		*/
 		bool add(Index ind) nothrow
-		in(ind < sparse.length){
+		in(ind < this.sparse.length){
 			if(!this.has(ind)){
 				sparse[ind] = elementCount;
 				grow();
@@ -496,7 +488,7 @@ if((is(Index_ == uint) || is(Index_ == ushort) || is(Index_ == ubyte)) && isAllo
 		Returns: `false` if element `ind` already existed.
 		*/
 		bool add()(Index ind, auto ref Value value)
-		in(ind < sparse.length){
+		in(ind < this.sparse.length){
 			if(!this.has(ind)){
 				sparse[ind] = elementCount;
 				grow();
