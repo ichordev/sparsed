@@ -386,7 +386,7 @@ if((is(Index_ == uint) || is(Index_ == ushort) || is(Index_ == ubyte)) && isAllo
 	
 	//Grows the dense array by 1.
 	private void grow()
-	in(this.dense.length < this.sparse.length){
+	in(elementCount < this.sparse.length){
 		import std.algorithm.comparison: min;
 		auto dense = this.dense;
 		if(elementCount < dense.length){
