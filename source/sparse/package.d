@@ -88,9 +88,10 @@ struct StaticSparseSet(uint sparseSize_, uint denseSize_=sparseSize_, Value_=voi
 	*/
 	void remove(Index ind)
 	in(this.has(ind)){
-		dense[sparse[ind]] = dense[elementCount-1];
+		dense[sparse[ind]].index = dense[elementCount-1].index;
 		static if(!is(Value == void)){
-			dense[elementCount-1].value = Value.init;
+			import core.lifetime: move;
+			dense[sparse[ind]].value = move(dense[elementCount-1].value);
 		}
 		sparse[dense[elementCount-1].index] = sparse[ind];
 		elementCount--;
@@ -102,9 +103,10 @@ struct StaticSparseSet(uint sparseSize_, uint denseSize_=sparseSize_, Value_=voi
 	*/
 	bool tryRemove(Index ind){
 		if(this.has(ind)){
-			dense[sparse[ind]] = dense[elementCount-1];
+			dense[sparse[ind]].index = dense[elementCount-1].index;
 			static if(!is(Value == void)){
-				dense[elementCount-1].value = Value.init;
+				import core.lifetime: move;
+				dense[sparse[ind]].value = move(dense[elementCount-1].value);
 			}
 			sparse[dense[elementCount-1].index] = sparse[ind];
 			elementCount--;
@@ -430,9 +432,10 @@ if((is(Index_ == uint) || is(Index_ == ushort) || is(Index_ == ubyte)) && isAllo
 	*/
 	void remove(Index ind) @system
 	in(this.has(ind)){
-		dense[sparse[ind]] = dense[elementCount-1];
+		dense[sparse[ind]].index = dense[elementCount-1].index;
 		static if(!is(Value == void)){
-			dense[elementCount-1].value = Value.init;
+			import core.lifetime: move;
+			dense[sparse[ind]].value = move(dense[elementCount-1].value);
 		}
 		sparse[dense[elementCount-1].index] = sparse[ind];
 		elementCount--;
@@ -445,9 +448,10 @@ if((is(Index_ == uint) || is(Index_ == ushort) || is(Index_ == ubyte)) && isAllo
 	*/
 	bool tryRemove(Index ind) @system{
 		if(this.has(ind)){
-			dense[sparse[ind]] = dense[elementCount-1];
+			dense[sparse[ind]].index = dense[elementCount-1].index;
 			static if(!is(Value == void)){
-				dense[elementCount-1].value = Value.init;
+				import core.lifetime: move;
+				dense[sparse[ind]].value = move(dense[elementCount-1].value);
 			}
 			sparse[dense[elementCount-1].index] = sparse[ind];
 			elementCount--;
@@ -462,8 +466,7 @@ if((is(Index_ == uint) || is(Index_ == ushort) || is(Index_ == ubyte)) && isAllo
 	
 	static if(is(Value == void)){
 		///Return whether `ind` is in the set or not.
-		bool opBinaryRight(string op: "in")(Index ind) const nothrow @nogc pure @safe =>
-			this.has(ind);
+		alias opBinaryRight(string op: "in") = has;
 		
 		/**
 		Add element `ind` to the set.
